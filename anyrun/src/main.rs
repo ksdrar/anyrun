@@ -9,7 +9,7 @@ use std::{
 };
 
 use abi_stable::std_types::{ROption, RVec};
-use anyrun_interface::{HandleResult, Match, PluginInfo, PluginRef, PollResult};
+use anyrun_interface::{HandleResult, Match, PluginRef, PollResult};
 use gtk::{gdk, gdk_pixbuf, glib, prelude::*};
 use nix::unistd;
 use serde::Deserialize;
@@ -22,7 +22,6 @@ struct Config {
     position: Position,
     plugins: Vec<PathBuf>,
     hide_icons: bool,
-    hide_plugin_info: bool,
     ignore_exclusive_zones: bool,
     close_on_click: bool,
     max_entries: Option<usize>,
@@ -42,7 +41,6 @@ impl Default for Config {
                 "libtranslate.so".into(),
             ],
             hide_icons: false,
-            hide_plugin_info: false,
             ignore_exclusive_zones: false,
             close_on_click: false,
             max_entries: None,
@@ -378,28 +376,16 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<Option<RuntimeData>
             );
 
             let plugin_box = gtk::Box::builder()
-                .orientation(gtk::Orientation::Horizontal)
-                .spacing(10)
+                .orientation(gtk::Orientation::Vertical)
                 .name(style_names::PLUGIN)
                 .build();
-            if !runtime_data
-                .borrow()
-                .as_ref()
-                .unwrap()
-                .config
-                .hide_plugin_info
-            {
-                plugin_box.add(&create_info_box(
-                    &plugin.info()(),
-                    runtime_data.borrow().as_ref().unwrap().config.hide_icons,
-                ));
-                plugin_box.add(
-                    &gtk::Separator::builder()
-                        .orientation(gtk::Orientation::Horizontal)
-                        .name(style_names::PLUGIN)
-                        .build(),
-                );
-            }
+            plugin_box.add(
+                &gtk::Label::builder()
+                    .name(style_names::PLUGIN)
+                    .label(&plugin.info()().name)
+                    .halign(gtk::Align::Start)
+                    .build(),
+            );
             let list = gtk::ListBox::builder()
                 .name(style_names::PLUGIN)
                 .hexpand(true)
@@ -823,51 +809,6 @@ fn handle_matches(plugin_view: PluginView, runtime_data: &RuntimeData, matches: 
     if let Some((row, view)) = combined_matches.get(0) {
         view.list.select_row(Some(row));
     }
-}
-
-/// Create the info box for the plugin
-fn create_info_box(info: &PluginInfo, hide_icons: bool) -> gtk::Box {
-    let info_box = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .name(style_names::PLUGIN)
-        .width_request(200)
-        .height_request(32)
-        .expand(false)
-        .spacing(10)
-        .build();
-    if !hide_icons {
-        info_box.add(
-            &gtk::Image::builder()
-                .icon_name(&info.icon)
-                .name(style_names::PLUGIN)
-                .pixel_size(32)
-                .halign(gtk::Align::Start)
-                .valign(gtk::Align::Start)
-                .build(),
-        );
-    }
-    info_box.add(
-        &gtk::Label::builder()
-            .label(&info.name)
-            .name(style_names::PLUGIN)
-            .halign(gtk::Align::End)
-            .valign(gtk::Align::Center)
-            .hexpand(true)
-            .build(),
-    );
-    // This is so that we can align the plugin name with the icon. GTK would not let it be properly aligned otherwise.
-    let main_box = gtk::Box::builder()
-        .orientation(gtk::Orientation::Vertical)
-        .name(style_names::PLUGIN)
-        .build();
-    main_box.add(&info_box);
-    main_box.add(
-        &gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .name(style_names::PLUGIN)
-            .build(),
-    );
-    main_box
 }
 
 /// Refresh the matches from the plugins
