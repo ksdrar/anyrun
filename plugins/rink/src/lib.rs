@@ -47,7 +47,7 @@ fn get_matches(input: RString, ctx: &mut rink_core::Context) -> RVec<Match> {
             title: result.into(),
             description: ROption::RNone,
             use_pango: false,
-            icon: ROption::RNone,
+            icon: ROption::RSome("applications-education-mathematics".into()),
             id: ROption::RNone,
         }]
         .into(),
